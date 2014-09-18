@@ -11,6 +11,7 @@
 #include <time.h>
 #include <new>
 #include <fstream>
+#include "getcmdoutput.hpp"
 #pragma comment (lib, "Ws2_32.lib")
 
 namespace http{
@@ -150,6 +151,8 @@ http_server::~http_server(){
 	WSACleanup();
 }
 _ERROR_CODE http_server::Default(){
+	TCHAR* aaa=getcmdoutput(TEXT("ping.exe WWW.BAIDU.COM"));
+	if(aaa) std::cout << aaa;
 	if (_NO_ERROR == this->initialize("", "6900")){
 		while (1){
 			SOCKET s = this->Accept();
