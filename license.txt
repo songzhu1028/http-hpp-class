@@ -1,1 +1,1 @@
-copyright to Colin 2014
+Copyright to Colin 2014
