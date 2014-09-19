@@ -151,8 +151,6 @@ http_server::~http_server(){
 	WSACleanup();
 }
 _ERROR_CODE http_server::Default(){
-	TCHAR* aaa=getcmdoutput(TEXT("dir c:"));
-	if(aaa[0]=='\n') std::_tcout << aaa;
 	if (_NO_ERROR == this->initialize("", "6900")){
 		while (1){
 			SOCKET s = this->Accept();
