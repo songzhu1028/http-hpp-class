@@ -67,10 +67,15 @@ TCHAR* getcmdoutput(TCHAR* pcmd, HANDLE* phandle = NULL, PROCESS_INFORMATION* pp
 				else
 					continue;
 			}
-			TCHAR* temp = new TCHAR[_tcslen(ret) + bytesRead + 1];
-			_tcscpy(temp, ret);
-			ret = _tcscat(temp, ctot(buffer));
-			Sleep(100);
+			if (0 == bytesRead){//the other end of the pipe called the WriteFile function with nNumberOfBytesToWrite set to zero.
+				continue;
+			}
+			else{
+				TCHAR* temp = new TCHAR[_tcslen(ret) + bytesRead + 1];
+				_tcscpy(temp, ret);
+				ret = _tcscat(temp, ctot(buffer));
+				Sleep(100);
+			}
 		}		
 		CloseHandle(hRead);
 		return ret;
