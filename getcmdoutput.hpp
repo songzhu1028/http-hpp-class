@@ -5,10 +5,15 @@
 #include <windows.h>
 #include <iostream>
 #include <tchar.h>
-TCHAR* _tcstrim(TCHAR* str);
-TCHAR* _tcsrev(TCHAR* str);
-TCHAR* _tcssub(TCHAR* str,int from,int end);
-TCHAR* getcmdoutput(TCHAR* pcmd)
+#include <tstring.hpp>
+
+//function: run the command, and return the output.
+//parameter: phandle: a pile handle which you can read the output from it.
+//			ppi: pointer to the sub process,
+//			type: if true,return the output string, else return '\n' if success place phandle & ppi.
+//return value: the first character is '\n', it success;
+//			if '1', pipe create fail;  else '2' , create process fail.
+TCHAR* getcmdoutput(TCHAR* pcmd, HANDLE* phandle = NULL, PROCESS_INFORMATION* ppi=NULL,bool type = true)
 {
 	TCHAR* ret = NULL;
 	ret = new TCHAR[2];
@@ -37,57 +42,39 @@ TCHAR* getcmdoutput(TCHAR* pcmd)
 	if (!CreateProcess(NULL, szCmdline, NULL, NULL, TRUE, NULL, NULL, NULL, &si, &pi))
 	{
 		ret = (TCHAR*)&(TEXT("2\0"));
-		CloseHandle(hWrite); //关闭管道句柄
-		DWORD d = GetLastError();
 		return ret;
 	}
-	CloseHandle(hWrite); //关闭管道句柄
 	
-	WaitForSingleObject(pi.hProcess, INFINITE);
-	TCHAR buffer[4096] = {0};
-	ret = (TCHAR*)&(TEXT("\n\0"));
-	DWORD bytesRead=0;
+	if (!type){
+		phandle = &hRead;
+		ppi = &pi;
+		CloseHandle(hWrite); //关闭管道句柄
+		return ret;	
+	}
+	else{
+		WaitForSingleObject(pi.hProcess, INFINITE);	// Wait until child process exits.
+		CloseHandle(pi.hProcess);	// Close process and thread handles. 
+		CloseHandle(pi.hThread);
+		CloseHandle(hWrite); //关闭管道句柄
+		char buffer[4096] = { 0 };
+		ret = (TCHAR*)&(TEXT("\0\0"));
+		DWORD bytesRead = 0;
+		while (true)
+		{
+			if (ReadFile(hRead, buffer, 4095, &bytesRead, NULL) == FALSE) {
+				if (ERROR_BROKEN_PIPE == GetLastError())
+					break;
+				else
+					continue;
+			}
+			TCHAR* temp = new TCHAR[_tcslen(ret) + bytesRead + 1];
+			_tcscpy(temp, ret);
+			ret = _tcscat(temp, ctot(buffer));
+			Sleep(100);
+		}		
+		CloseHandle(hRead);
+		return ret;
+	}
+}
 
-	while (true)
-	{
-		if (ReadFile(hRead,buffer,4095,&bytesRead,NULL) == NULL) //读取管道
-			break;
-		TCHAR* temp = new TCHAR[_tcslen(ret)+bytesRead+1];
-		_tcscpy(temp, ret);
-		ret=_tcscat(temp, buffer);
-		break;
-		//UpdateWindow();
-		//Sleep(100);
-	}
-	CloseHandle(hRead);
-	return ret;	
-}
-TCHAR* _tcstrim(TCHAR* str){
-	if (str){
-		if (str[_tcslen(str) - 1] == ' ')
-			return _tcstrim(_tcssub(str, 0, _tcslen(str) - 1));
-		else if (str[0] == ' ')
-			return _tcstrim(_tcssub(str, 1, _tcslen(str) - 1));
-		else
-			return str;
-	}
-	else
-		return NULL;
-}
-
-TCHAR* _tcssub(TCHAR* str, int from, int size){
-	if (str){
-		if (0 <= from && size > 0 && from < _tcslen(str)){
-			int total = min(from + size, _tcslen(str));
-			TCHAR* ret = new TCHAR[total - from + 1];
-			_tcsset(ret, '\0');
-			for (int i = from; i < total; i++)
-				ret[i - from] = str[i];
-			ret[total - from] = '\0';
-			return ret;
-		}
-		else return NULL;
-	}
-	else return NULL;
-}
 #endif
